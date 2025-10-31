@@ -2,27 +2,41 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Least-privilege permissions
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Build Docker Image
-      run: docker build -t tests-image .
+      # Optional but tidy for modern runners
+      - name: Enable Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Run Tests in Docker
-      run: |
-        docker run --name tests-container tests-image || exit 1
-        docker cp tests-container:/app/reports.xml reports.xml
-        docker rm tests-container
+      - name: Build Docker image
+        run: docker build -t tests-image .
 
-    - name: Upload Test Report
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-report
-        path: reports.xml
+      - name: Run tests in container and extract report
+        run: |
+          set -e
+          docker run --name tests-container tests-image || exit 1
+          # copy JUnit report out of the container (created by pytest)
+          docker cp tests-container:/app/reports.xml ./reports.xml || true
+          docker rm -f tests-container
+
+      - name: Upload JUnit test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: reports.xml
+          if-no-files-found: warn
+          retention-days: 7
