@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v3
+
+    - name: Build Docker Image
+      run: docker build -t tests-image .
+
+    - name: Run Tests in Docker
+      run: |
+        docker run --name tests-container tests-image || exit 1
+        docker cp tests-container:/app/reports.xml reports.xml
+        docker rm tests-container
+
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-report
+        path: reports.xml
