@@ -3,4 +3,4 @@ WORKDIR /app
 COPY . .
 RUN pip install -r requirements.txt
 ENV PYTHONPATH=/app
-CMD ["pytest", "--junitxml=reports.xml", "-q"]
+CMD ["pytest", "--junitxml=reports.xml", "--cov=src", "--cov-report=xml", "-q"]

@@ -1,0 +1,9 @@
+# Ignore Windows reserved device filenames
+/NUL
+/nul
+/CON
+/PRN
+/AUX
+/COM1
+/COM2
+/LPT1

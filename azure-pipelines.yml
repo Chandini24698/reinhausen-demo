@@ -1,0 +1,32 @@
+trigger:
+  branches:
+    include: [ main ]
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- checkout: self
+
+- task: DockerInstaller@0
+  displayName: Ensure Docker is available
+
+- script: |
+    docker build -t tests-image .
+    docker run --name tests-container tests-image || exit 1
+    docker cp tests-container:/app/reports.xml ./reports.xml || true
+    docker cp tests-container:/app/coverage.xml ./coverage.xml || true
+    docker rm -f tests-container
+  displayName: Build image and run tests in container
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFiles: 'reports.xml'
+    testRunTitle: 'Dockerized Pytest'
+    failTaskOnFailedTests: true
+
+- task: PublishCodeCoverageResults@2
+  inputs:
+    codeCoverageTool: 'Cobertura'
+    summaryFileLocation: 'coverage.xml'
+    failIfCoverageEmpty: false
